@@ -1,4 +1,4 @@
-{% set version = "1.12.1" %}
+{% set version = "1.13" %}
 
 package:
   name: msdfgen
@@ -6,7 +6,7 @@ package:
 
 source:
   url: https://github.com/Chlumsky/msdfgen/archive/refs/tags/v{{ version }}.tar.gz
-  sha256: 24541c9fbb459e8c62adeb3eb22cb21fa07a4b5091e2ae1f041d144a4baf08cd
+  sha256: 93cd1ad8918c1a78c5c96e82d4f4c77f0eb86c2e7e8579a0967e54196c4b7167
 
 build:
   number: 0
