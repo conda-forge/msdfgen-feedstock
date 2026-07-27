@@ -2,17 +2,33 @@ schema_version: 1
 
 context:
   version: "1.13"
+  # conda-forge has no standalone skia package. The skia-pathops sdist
+  # vendors a pinned, self-contained Skia snapshot (no network access
+  # needed at build time) that the skia-pathops feedstock already builds
+  # on every platform this feedstock targets; msdfgen only needs the
+  # same PathOps subset, so those sources are reused here.
+  skia_pathops_version: "0.9.1"
 
 package:
   name: msdfgen
   version: ${{ version }}
 
 source:
-  url: https://github.com/Chlumsky/msdfgen/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 93cd1ad8918c1a78c5c96e82d4f4c77f0eb86c2e7e8579a0967e54196c4b7167
+  - url: https://github.com/Chlumsky/msdfgen/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 93cd1ad8918c1a78c5c96e82d4f4c77f0eb86c2e7e8579a0967e54196c4b7167
+    patches:
+      # Upstream da07a9c (Chlumsky/msdfgen#250), first release after
+      # 1.13: v1.13 predates the SkPathBuilder API of the Skia snapshot
+      # built below. Drop when the recipe moves past 1.13.
+      - patches/0001-adapt-to-the-new-version-of-the-skia-api.patch
+  # Fetched on every platform so the license path always resolves; only
+  # built where Skia is enabled (see build.sh).
+  - url: https://pypi.org/packages/source/s/skia-pathops/skia_pathops-${{ skia_pathops_version }}.tar.gz
+    sha256: f1273ef4da23570f33e76e7753908484e5a4a2468f7b1089f9110ccee6293f99
+    target_directory: skia-pathops
 
 build:
-  number: 1
+  number: 2
 
 requirements:
   build:
@@ -21,12 +37,16 @@ requirements:
     - ${{ stdlib('c') }}
     - cmake
     - ninja
+    - if: not ppc64le
+      then:
+        # gn + python drive the trimmed static Skia build
+        - gn
+        - python
   host:
     - freetype
     - tinyxml2
     - libpng
     - zlib
-    # - skia
   run_exports:
     weak:
       - ${{ pin_subpackage('msdfgen', upper_bound='x.x') }}
@@ -42,6 +62,16 @@ tests:
         - msdfgen
   - script:
       - msdfgen --help
+  - if: not ppc64le
+    then:
+      script:
+        # The -nopreprocess option only exists in Skia-enabled builds
+        - if: unix
+          then: msdfgen --help | grep nopreprocess
+        - if: win
+          then: msdfgen --help | findstr nopreprocess
+        # Overlapping squares; resolving them exercises Skia's PathOps
+        - msdfgen msdf -defineshape "{ 0, 0; 6, 0; 6, 6; 0, 6; # } { 3, 3; 9, 3; 9, 9; 3, 9; # }" -dimensions 16 16 -o test-skia.png
 
 about:
   homepage: https://github.com/Chlumsky/msdfgen
@@ -57,8 +87,14 @@ about:
     developed. Unlike monochrome distance fields, they have the ability to
     reproduce sharp corners almost perfectly by utilizing all three color
     channels.
-  license: MIT
-  license_file: LICENSE.txt
+
+    Built with Skia geometry preprocessing (MSDFGEN_USE_SKIA, resolving
+    self-intersections and overlapping contours) on all platforms except
+    linux-ppc64le, matching upstream's default (vcpkg) configuration.
+  license: MIT AND BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+    - skia-pathops/src/cpp/skia-builder/skia/LICENSE
 
 extra:
   recipe-maintainers:
