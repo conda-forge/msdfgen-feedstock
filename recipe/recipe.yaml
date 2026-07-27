@@ -70,8 +70,10 @@ tests:
           then: msdfgen --help | grep nopreprocess
         - if: win
           then: msdfgen --help | findstr nopreprocess
-        # Overlapping squares; resolving them exercises Skia's PathOps
-        - msdfgen msdf -defineshape "{ 0, 0; 6, 0; 6, 6; 0, 6; # } { 3, 3; 9, 3; 9, 9; 3, 9; # }" -dimensions 16 16 -o test-skia.png
+        # Overlapping squares; resolving them exercises Skia's PathOps.
+        # (Single-quoted so YAML does not treat the '#' contour
+        # terminators as comments.)
+        - 'msdfgen msdf -defineshape "{ 0, 0; 6, 0; 6, 6; 0, 6; # } { 3, 3; 9, 3; 9, 9; 3, 9; # }" -dimensions 16 16 -o test-skia.png'
 
 about:
   homepage: https://github.com/Chlumsky/msdfgen
