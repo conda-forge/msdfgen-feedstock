@@ -20,7 +20,9 @@ set "SKIA_GN_ARGS=!SKIA_GN_ARGS! target_cpu=\"x64\""
 set "SKIA_GN_ARGS=!SKIA_GN_ARGS! extra_cflags=[\"/MD\",\"-DSK_DISABLE_LEGACY_PNG_WRITEBUFFER\"]"
 
 cd /d "%SKIA_SRC%"
-gn gen "%SKIA_BUILD%" --script-executable="%PYTHON%" --args="!SKIA_GN_ARGS!"
+:: python lives in the build environment (build requirement), not the
+:: host prefix that %PYTHON% points to.
+gn gen "%SKIA_BUILD%" --script-executable="%BUILD_PREFIX%\python.exe" --args="!SKIA_GN_ARGS!"
 if errorlevel 1 exit 1
 ninja -C "%SKIA_BUILD%" -j%CPU_COUNT% skia
 if errorlevel 1 exit 1

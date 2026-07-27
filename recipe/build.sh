@@ -39,9 +39,11 @@ if [[ "${MSDFGEN_WITH_SKIA}" == "ON" ]]; then
         SKIA_GN_ARGS+=" extra_cflags=[\"-fPIC\",\"-DSK_DISABLE_LEGACY_PNG_WRITEBUFFER\"]"
     fi
 
+    # python lives in the build environment (build requirement), not the
+    # host prefix that ${PYTHON} points to.
     (cd "${SKIA_SRC}" && \
         gn gen "${SKIA_BUILD}" \
-            --script-executable="${PYTHON:-python3}" \
+            --script-executable="${BUILD_PREFIX}/bin/python3" \
             --args="${SKIA_GN_ARGS}")
     ninja -C "${SKIA_BUILD}" -j${CPU_COUNT} skia
 
