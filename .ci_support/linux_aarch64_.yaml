@@ -21,7 +21,7 @@ freetype:
 libpng:
 - '1.6'
 target_platform:
-- linux-64
+- linux-aarch64
 tinyxml2:
 - '11.0'
 zip_keys:

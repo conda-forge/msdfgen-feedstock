@@ -9,6 +9,8 @@ Package license: MIT
 
 Summary: Multi-channel signed distance field generator
 
+Development: https://github.com/Chlumsky/msdfgen
+
 This is a utility for generating signed distance fields from vector shapes
 and font glyphs, which serve as a texture representation that can be used
 in real-time graphics to efficiently reproduce said shapes. Although it can
@@ -19,12 +21,18 @@ developed. Unlike monochrome distance fields, they have the ability to
 reproduce sharp corners almost perfectly by utilizing all three color
 channels.
 
-
 Current build status
 ====================
 
 
-<table>
+<table><tr>
+    <td>GitHub Actions</td>
+    <td>
+      <a href="https://github.com/conda-forge/msdfgen-feedstock/actions/workflows/conda-build.yml">
+        <img src="https://github.com/conda-forge/msdfgen-feedstock/actions/workflows/conda-build.yml/badge.svg?event=push&branch=main">
+      </a>
+    </td>
+  </tr>
     
   <tr>
     <td>Azure</td>
@@ -38,13 +46,6 @@ Current build status
         <table>
           <thead><tr><th>Variant</th><th>Status</th></tr></thead>
           <tbody><tr>
-              <td>linux_64</td>
-              <td>
-                <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=26567&branchName=main">
-                  <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/msdfgen-feedstock?branchName=main&jobName=linux&configuration=linux%20linux_64_" alt="variant">
-                </a>
-              </td>
-            </tr><tr>
               <td>osx_64</td>
               <td>
                 <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=26567&branchName=main">

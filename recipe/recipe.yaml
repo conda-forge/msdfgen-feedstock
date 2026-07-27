@@ -1,23 +1,24 @@
-{% set version = "1.13" %}
+schema_version: 1
+
+context:
+  version: "1.13"
 
 package:
   name: msdfgen
-  version: {{ version }}
+  version: ${{ version }}
 
 source:
-  url: https://github.com/Chlumsky/msdfgen/archive/refs/tags/v{{ version }}.tar.gz
+  url: https://github.com/Chlumsky/msdfgen/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 93cd1ad8918c1a78c5c96e82d4f4c77f0eb86c2e7e8579a0967e54196c4b7167
 
 build:
-  number: 0
-  run_exports:
-    - {{ pin_subpackage('msdfgen', max_pin='x.x') }}
+  number: 1
 
 requirements:
   build:
-    - {{ compiler('cxx') }}
-    - {{ compiler('c') }}
-    - {{ stdlib('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
     - cmake
     - ninja
   host:
@@ -26,21 +27,25 @@ requirements:
     - libpng
     - zlib
     # - skia
+  run_exports:
+    weak:
+      - ${{ pin_subpackage('msdfgen', upper_bound='x.x') }}
 
-test:
-  commands:
-    - msdfgen --help
-    - test -f ${PREFIX}/include/msdfgen/msdfgen.h                     # [unix]
-    - test -f ${PREFIX}/lib/libmsdfgen-core${SHLIB_EXT}               # [unix]
-    - test -f ${PREFIX}/lib/libmsdfgen-ext${SHLIB_EXT}                # [unix]
-    - if not exist %PREFIX%\Library\bin\msdfgen-core.dll exit 1       # [win]
-    - if not exist %PREFIX%\Library\lib\msdfgen-core.lib exit 1       # [win]
-    - if not exist %PREFIX%\Library\lib\msdfgen-ext.lib exit 1        # [win]
-    - if not exist %PREFIX%\Library\bin\msdfgen-ext.dll exit 1        # [win]
-    - if not exist %PREFIX%\Library\include\msdfgen\msdfgen.h exit 1  # [win]
+tests:
+  - package_contents:
+      include:
+        - msdfgen/msdfgen.h
+      lib:
+        - msdfgen-core
+        - msdfgen-ext
+      bin:
+        - msdfgen
+  - script:
+      - msdfgen --help
 
 about:
-  home: https://github.com/Chlumsky/msdfgen
+  homepage: https://github.com/Chlumsky/msdfgen
+  repository: https://github.com/Chlumsky/msdfgen
   summary: Multi-channel signed distance field generator
   description: |
     This is a utility for generating signed distance fields from vector shapes
@@ -52,9 +57,7 @@ about:
     developed. Unlike monochrome distance fields, they have the ability to
     reproduce sharp corners almost perfectly by utilizing all three color
     channels.
-
   license: MIT
-  license_family: MIT
   license_file: LICENSE.txt
 
 extra:
