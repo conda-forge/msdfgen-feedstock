@@ -1,0 +1,204 @@
+From da07a9c04f9f92a247fef7da57aa62085647757e Mon Sep 17 00:00:00 2001
+From: Weihang Ding <798047000@qq.com>
+Date: Thu, 5 Mar 2026 19:21:57 +0800
+Subject: [PATCH] Adapt to the new version of the Skia API (#250)
+
+---
+ ext/import-svg.cpp             | 54 +++++++++++++++++++---------------
+ ext/resolve-shape-geometry.cpp | 11 ++++---
+ 2 files changed, 38 insertions(+), 27 deletions(-)
+
+diff --git a/ext/import-svg.cpp b/ext/import-svg.cpp
+index 752f798..b3fefca 100644
+--- a/ext/import-svg.cpp
++++ b/ext/import-svg.cpp
+@@ -26,6 +26,7 @@
+ 
+ #ifdef MSDFGEN_USE_SKIA
+ #include <skia/core/SkPath.h>
++#include <skia/core/SkPathBuilder.h>
+ #include <skia/utils/SkParsePath.h>
+ #include <skia/pathops/SkPathOps.h>
+ #endif
+@@ -688,6 +689,7 @@ static void gatherPaths(SkPath &fullPath, int &flags, tinyxml2::XMLElement *pare
+             flags |= SVG_IMPORT_UNSUPPORTED_FEATURE_FLAG;
+         else {
+             SkPath curPath;
++            SkPathBuilder curPathBuilder;
+             if (!strcmp(cur->Name(), "path")) {
+                 const char *pd = cur->Attribute("d");
+                 if (!(pd && SkParsePath::FromSVGString(pd, &curPath))) {
+@@ -701,23 +703,25 @@ static void gatherPaths(SkPath &fullPath, int &flags, tinyxml2::XMLElement *pare
+                 if (!(width && height))
+                     continue;
+                 SkRect rect = SkRect::MakeLTRB(x, y, x+width, y+height);
+-                if (rx || ry) {
+-                    SkScalar radii[] = { rx, ry, rx, ry, rx, ry, rx, ry };
+-                    curPath.addRoundRect(rect, radii);
+-                } else
+-                    curPath.addRect(rect);
++                if (rx || ry)
++                    curPathBuilder.addRRect(SkRRect::MakeRectXY(rect, rx, ry));
++                else
++                    curPathBuilder.addRect(rect);
++                curPath = curPathBuilder.detach();
+             } else if (!strcmp(cur->Name(), "circle")) {
+                 SkScalar cx = SkScalar(cur->DoubleAttribute("cx")), cy = SkScalar(cur->DoubleAttribute("cy"));
+                 SkScalar r = SkScalar(cur->DoubleAttribute("r"));
+                 if (!r)
+                     continue;
+-                curPath.addCircle(cx, cy, r);
++                curPathBuilder.addCircle(cx, cy, r);
++                curPath = curPathBuilder.detach();
+             } else if (!strcmp(cur->Name(), "ellipse")) {
+                 SkScalar cx = SkScalar(cur->DoubleAttribute("cx")), cy = SkScalar(cur->DoubleAttribute("cy"));
+                 SkScalar rx = SkScalar(cur->DoubleAttribute("rx")), ry = SkScalar(cur->DoubleAttribute("ry"));
+                 if (!(rx && ry))
+                     continue;
+-                curPath.addOval(SkRect::MakeLTRB(cx-rx, cy-ry, cx+rx, cy+ry));
++                curPathBuilder.addOval(SkRect::MakeLTRB(cx-rx, cy-ry, cx+rx, cy+ry));
++                curPath = curPathBuilder.detach();
+             } else if (!strcmp(cur->Name(), "polygon")) {
+                 const char *pd = cur->Attribute("points");
+                 if (!pd) {
+@@ -727,19 +731,20 @@ static void gatherPaths(SkPath &fullPath, int &flags, tinyxml2::XMLElement *pare
+                 Point2 point;
+                 if (!readCoord(point, pd))
+                     continue;
+-                curPath.moveTo(SkScalar(point.x), SkScalar(point.y));
++                curPathBuilder.moveTo(SkScalar(point.x), SkScalar(point.y));
+                 if (!readCoord(point, pd))
+                     continue;
+                 do {
+-                    curPath.lineTo(SkScalar(point.x), SkScalar(point.y));
++                    curPathBuilder.lineTo(SkScalar(point.x), SkScalar(point.y));
+                 } while (readCoord(point, pd));
+-                curPath.close();
++                curPathBuilder.close();
++                curPath = curPathBuilder.detach();
+             } else
+                 continue;
+             const char *fillRule = cur->Attribute("fill-rule");
+             if (fillRule && !strcmp(fillRule, "evenodd"))
+                 curPath.setFillType(SkPathFillType::kEvenOdd);
+-            curPath.transform(combineTransformation(flags, transformation, cur->Attribute("transform"), cur->Attribute("transform-origin")));
++            curPath = curPath.makeTransform(combineTransformation(flags, transformation, cur->Attribute("transform"), cur->Attribute("transform-origin")));
+             if (Op(fullPath, curPath, kUnion_SkPathOp, &fullPath))
+                 flags |= SVG_IMPORT_SUCCESS_FLAG;
+             else
+@@ -957,6 +962,7 @@ int parseSvgShape(Shape &output, Shape::Bounds &viewBox, const char *svgData, si
+                 case POLYGON:
+                     {
+                         SkPath curPath;
++                        SkPathBuilder curPathBuilder;
+                         switch (curElement) {
+                             case PATH:
+                                 if (!SkParsePath::FromSVGString(elem.pathDef.str().c_str(), &curPath)) {
+@@ -969,23 +975,24 @@ int parseSvgShape(Shape &output, Shape::Bounds &viewBox, const char *svgData, si
+                                     if (!(elem.dims.x && elem.dims.y))
+                                         return true;
+                                     SkRect rect = SkRect::MakeLTRB(elem.pos.x, elem.pos.y, elem.pos.x+elem.dims.x, elem.pos.y+elem.dims.y);
+-                                    if (elem.radius.x || elem.radius.y) {
+-                                        SkScalar rx = SkScalar(elem.radius.x), ry = SkScalar(elem.radius.y);
+-                                        SkScalar radii[] = { rx, ry, rx, ry, rx, ry, rx, ry };
+-                                        curPath.addRoundRect(rect, radii);
+-                                    } else
+-                                        curPath.addRect(rect);
++                                    if (elem.radius.x || elem.radius.y)
++                                        curPathBuilder.addRRect(SkRRect::MakeRectXY(rect, SkScalar(elem.radius.x), SkScalar(elem.radius.y)));
++                                    else
++                                        curPathBuilder.addRect(rect);
++                                    curPath = curPathBuilder.detach();
+                                 }
+                                 break;
+                             case CIRCLE:
+                                 if (!elem.radius.x)
+                                     return true;
+-                                curPath.addCircle(elem.pos.x, elem.pos.y, elem.radius.x);
++                                curPathBuilder.addCircle(elem.pos.x, elem.pos.y, elem.radius.x);
++                                curPath = curPathBuilder.detach();
+                                 break;
+                             case ELLIPSE:
+                                 if (!(elem.radius.x && elem.radius.y))
+                                     return true;
+-                                curPath.addOval(SkRect::MakeLTRB(elem.pos.x-elem.radius.x, elem.pos.y-elem.radius.y, elem.pos.x+elem.radius.x, elem.pos.y+elem.radius.y));
++                                curPathBuilder.addOval(SkRect::MakeLTRB(elem.pos.x-elem.radius.x, elem.pos.y-elem.radius.y, elem.pos.x+elem.radius.x, elem.pos.y+elem.radius.y));
++                                curPath = curPathBuilder.detach();
+                                 break;
+                             case POLYGON:
+                                 {
+@@ -998,13 +1005,14 @@ int parseSvgShape(Shape &output, Shape::Bounds &viewBox, const char *svgData, si
+                                     Point2 point;
+                                     if (!readCoord(point, pd))
+                                         return true;
+-                                    curPath.moveTo(SkScalar(point.x), SkScalar(point.y));
++                                    curPathBuilder.moveTo(SkScalar(point.x), SkScalar(point.y));
+                                     if (!readCoord(point, pd))
+                                         return true;
+                                     do {
+-                                        curPath.lineTo(SkScalar(point.x), SkScalar(point.y));
++                                        curPathBuilder.lineTo(SkScalar(point.x), SkScalar(point.y));
+                                     } while (readCoord(point, pd));
+-                                    curPath.close();
++                                    curPathBuilder.close();
++                                    curPath = curPathBuilder.detach();
+                                 }
+                                 break;
+                             default:
+@@ -1012,7 +1020,7 @@ int parseSvgShape(Shape &output, Shape::Bounds &viewBox, const char *svgData, si
+                         }
+                         if (elem.fillRuleEvenOdd)
+                             curPath.setFillType(SkPathFillType::kEvenOdd);
+-                        curPath.transform(combineTransformation(flags, transformation, elem.transform.str().c_str(), elem.transformOrigin.str().c_str()));
++                        curPath = curPath.makeTransform(combineTransformation(flags, transformation, elem.transform.str().c_str(), elem.transformOrigin.str().c_str()));
+                         if (Op(fullPath, curPath, kUnion_SkPathOp, &fullPath))
+                             flags |= SVG_IMPORT_SUCCESS_FLAG;
+                         else
+diff --git a/ext/resolve-shape-geometry.cpp b/ext/resolve-shape-geometry.cpp
+index a24dbeb..a83fa4e 100644
+--- a/ext/resolve-shape-geometry.cpp
++++ b/ext/resolve-shape-geometry.cpp
+@@ -4,6 +4,7 @@
+ #ifdef MSDFGEN_USE_SKIA
+ 
+ #include <skia/core/SkPath.h>
++#include <skia/core/SkPathBuilder.h>
+ #include <skia/pathops/SkPathOps.h>
+ #include "../core/arithmetics.hpp"
+ #include "../core/Vector2.hpp"
+@@ -21,26 +22,28 @@ Point2 pointFromSkiaPoint(const SkPoint p) {
+ }
+ 
+ void shapeToSkiaPath(SkPath &skPath, const Shape &shape) {
++    SkPathBuilder pathBuilder;
+     for (std::vector<Contour>::const_iterator contour = shape.contours.begin(); contour != shape.contours.end(); ++contour) {
+         if (!contour->edges.empty()) {
+             const EdgeSegment *edge = contour->edges.back();
+-            skPath.moveTo(pointToSkiaPoint(*edge->controlPoints()));
++            pathBuilder.moveTo(pointToSkiaPoint(*edge->controlPoints()));
+             for (std::vector<EdgeHolder>::const_iterator nextEdge = contour->edges.begin(); nextEdge != contour->edges.end(); edge = *nextEdge++) {
+                 const Point2 *p = edge->controlPoints();
+                 switch (edge->type()) {
+                     case (int) LinearSegment::EDGE_TYPE:
+-                        skPath.lineTo(pointToSkiaPoint(p[1]));
++                        pathBuilder.lineTo(pointToSkiaPoint(p[1]));
+                         break;
+                     case (int) QuadraticSegment::EDGE_TYPE:
+-                        skPath.quadTo(pointToSkiaPoint(p[1]), pointToSkiaPoint(p[2]));
++                        pathBuilder.quadTo(pointToSkiaPoint(p[1]), pointToSkiaPoint(p[2]));
+                         break;
+                     case (int) CubicSegment::EDGE_TYPE:
+-                        skPath.cubicTo(pointToSkiaPoint(p[1]), pointToSkiaPoint(p[2]), pointToSkiaPoint(p[3]));
++                        pathBuilder.cubicTo(pointToSkiaPoint(p[1]), pointToSkiaPoint(p[2]), pointToSkiaPoint(p[3]));
+                         break;
+                 }
+             }
+         }
+     }
++    skPath = pathBuilder.detach();
+ }
+ 
+ void shapeFromSkiaPath(Shape &shape, const SkPath &skPath) {
+-- 
+2.53.0
+
