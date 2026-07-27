@@ -1,0 +1,13 @@
+Include the PathOps module in libskia; it is not part of the default
+component. This is fonttools/skia-builder's only net change relative
+to official Skia (fonttools/skia@149648a8a7 + fonttools/skia@a777ad7f82).
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -1681,6 +1681,7 @@
+     ":lasx",
+     ":minify_sksl",
+     ":ndk_images",
++    ":pathops",
+     ":png_decode_rust",
+     ":raw",
+     ":skx",

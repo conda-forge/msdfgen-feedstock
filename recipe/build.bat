@@ -3,10 +3,9 @@ setlocal enabledelayedexpansion
 
 :: -------------------------------------------------------------------------
 :: 1. Build a trimmed static Skia (PathOps subset) for MSDFGEN_USE_SKIA,
-::    from the pinned snapshot vendored in the skia-pathops sdist (the
-::    same sources the skia-pathops feedstock builds on win-64).
+::    from the official sources pinned in recipe.yaml.
 :: -------------------------------------------------------------------------
-set "SKIA_SRC=%SRC_DIR%\skia-pathops\src\cpp\skia-builder\skia"
+set "SKIA_SRC=%SRC_DIR%\skia"
 set "SKIA_BUILD=%SRC_DIR%\skia-build"
 
 :: Assemble the gn args from the shared file, then append win specifics.

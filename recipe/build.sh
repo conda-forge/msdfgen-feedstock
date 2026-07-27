@@ -1,13 +1,10 @@
 set -ex
 
 # ---------------------------------------------------------------------------
-# 1. Build a trimmed static Skia (PathOps subset) for MSDFGEN_USE_SKIA.
-#
-# conda-forge has no standalone skia package, so Skia is built here from
-# the pinned snapshot vendored in the skia-pathops sdist -- the exact
-# sources the skia-pathops feedstock already builds on these platforms.
-# With every optional subsystem disabled (see build_skia_args.gni) this
-# is ~530 objects and about a minute of compile time.
+# 1. Build a trimmed static Skia (PathOps subset) for MSDFGEN_USE_SKIA,
+# from the official sources pinned in recipe.yaml. With every optional
+# subsystem disabled (see build_skia_args.gni) this is ~530 objects and
+# about a minute of compile time.
 # ---------------------------------------------------------------------------
 if [[ "${target_platform}" != "linux-ppc64le" ]]; then
     MSDFGEN_WITH_SKIA=ON
@@ -19,7 +16,7 @@ fi
 
 SKIA_CMAKE_ARGS=()
 if [[ "${MSDFGEN_WITH_SKIA}" == "ON" ]]; then
-    SKIA_SRC="${SRC_DIR}/skia-pathops/src/cpp/skia-builder/skia"
+    SKIA_SRC="${SRC_DIR}/skia"
     SKIA_BUILD="${SRC_DIR}/skia-build"
 
     case "${target_platform}" in
