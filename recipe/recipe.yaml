@@ -42,7 +42,7 @@ requirements:
       then:
         # gn + python drive the trimmed static Skia build
         - gn
-        - python
+        - python 3.14
   host:
     - freetype
     - tinyxml2
