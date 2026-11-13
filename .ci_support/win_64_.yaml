@@ -12,12 +12,6 @@ freetype:
 - '2'
 libpng:
 - '1.6'
-pin_run_as_build:
-  python:
-    min_pin: x.x
-    max_pin: x.x
-python:
-- 3.13.* *_cp313
 target_platform:
 - win-64
 tinyxml2:
