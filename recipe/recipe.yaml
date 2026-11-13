@@ -1,7 +1,7 @@
 schema_version: 1
 
 context:
-  version: "1.13"
+  version: "1.13.1"
   # conda-forge has no standalone skia package. A trimmed Skia (m143) is
   # built from the official sources at the commit the skia-pathops
   # project pins (via fonttools/skia-builder), a snapshot known to build
@@ -14,7 +14,7 @@ package:
 
 source:
   - url: https://github.com/Chlumsky/msdfgen/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: 93cd1ad8918c1a78c5c96e82d4f4c77f0eb86c2e7e8579a0967e54196c4b7167
+    sha256: ad381b09ef61af235690ea96eefafd01fd35f5163bcb6ad73db7904997675b71
     patches:
       # Upstream da07a9c (Chlumsky/msdfgen#250), first release after
       # 1.13: v1.13 predates the SkPathBuilder API of the Skia snapshot
@@ -29,7 +29,7 @@ source:
       - patches/0002-include-pathops-in-libskia.patch
 
 build:
-  number: 3
+  number: 0
 
 requirements:
   build:
@@ -42,7 +42,7 @@ requirements:
       then:
         # gn + python drive the trimmed static Skia build
         - gn
-        - python
+        - python 3.14.*
   host:
     - freetype
     - tinyxml2
